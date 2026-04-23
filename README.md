@@ -1,22 +1,27 @@
-# Minesweeper TUI
+# minesweeper-tui
+Flag the mines. Clear the board.
 
-Terminal-native Minesweeper. Python + Textual. Mouse and keyboard. Built
-following the `/tui-game-build` skill playbook, mirroring the
-`simcity-tui` reference project's layout.
+![Hero](screenshots/hero.svg)
+![Gameplay](screenshots/gameplay.svg)
+![End screen](screenshots/endscreen.svg)
 
-## Quick start
+## About
+The grid remembers everything. Beginner, Intermediate, Expert — or roll your own board. Left to reveal, right to flag, middle to chord, mouse or keyboard. Live timer, highscore list, REST agent API for the bots. The classic first-click-is-safe logic puzzle that has eaten a decade of lunch breaks.
 
+## Screenshots
+![Hero](screenshots/hero.svg)
+![Gameplay](screenshots/gameplay.svg)
+![End screen](screenshots/endscreen.svg)
+
+## Install & Run
 ```bash
-make all        # create venv + install
-make run        # launch at Beginner difficulty
-# or:
-.venv/bin/python minesweeper.py intermediate
-.venv/bin/python minesweeper.py expert
-.venv/bin/python minesweeper.py custom --width 20 --height 12 --mines 50
+git clone https://github.com/akakabrian/minesweeper-tui
+cd minesweeper-tui
+make
+make run
 ```
 
 ## Controls
-
 | Key               | Action                                      |
 |-------------------|---------------------------------------------|
 | Arrows / Home/End / PgUp/PgDn | move cursor                         |
@@ -43,69 +48,16 @@ make run        # launch at Beginner difficulty
 | `--headless`         | agent API only, no TUI                          |
 | `--host H --port P`  | override API bind address (default 127.0.0.1:8765) |
 
-## Features
-
-- Classic Beginner (9×9/10), Intermediate (16×16/40), Expert (30×16/99)
-  presets plus custom boards (4..80 × 4..40).
-- Mouse + keyboard input with flag/reveal/chord operations.
-- **Safe first click** — first reveal is never a mine, and its 8
-  neighbours are also cleared so flood-fill always kicks off.
-- Flood-fill on 0-adjacency cells.
-- Win/loss detection with end-game modal + post-loss "reveal all mines"
-  board view with exploded-cell highlight and wrong-flag `✗` markers.
-- Elapsed-time + mines-remaining counters.
-- High scores persisted to `~/.local/share/minesweeper-tui/highscores.json`.
-- Opt-in synth SFX (`--sound`). Silent-on-failure.
-- Deterministic boards with `--seed N` for reproducible puzzles / testing.
-
-## Agent REST API
-
-Minesweeper ships an opt-in HTTP API for external agents (LLMs, RL gyms,
-integration tests). Start alongside the TUI with `--agent`, or standalone
-with `--headless`:
-
-```bash
-.venv/bin/python minesweeper.py beginner --agent           # TUI + API
-.venv/bin/python minesweeper.py expert  --headless         # API only
-```
-
-| Route              | Method | Body                                       | Returns                                |
-|--------------------|--------|--------------------------------------------|----------------------------------------|
-| `/healthz`         | GET    | –                                          | `{"ok": true}`                         |
-| `/state`           | GET    | –                                          | full `state_snapshot()`                |
-| `/reveal`          | POST   | `{x, y}`                                   | `{ok, result, state}`                  |
-| `/flag`            | POST   | `{x, y}`                                   | `{ok, result, state}`                  |
-| `/chord`           | POST   | `{x, y}`                                   | `{ok, result, state}`                  |
-| `/new_game`        | POST   | `{difficulty, seed?, width?, height?, mines?}` | `{ok, state}`                      |
-
-The state snapshot masks `adj` on hidden cells so a naïve agent can't
-peek at mine locations.
-
 ## Testing
-
 ```bash
-make test                 # full QA: 23 TUI scenarios + 11 API + perf
-make test-api             # agent-API subset only
-make test-only PAT=flag   # TUI subset filtered by substring
-make test-sound           # 2-second audio pipeline diagnostic
+make test       # QA harness
+make playtest   # scripted critical-path run
+make perf       # performance baseline
 ```
-
-Every TUI scenario writes a PASS/FAIL SVG screenshot to `tests/out/` for
-visual diffing across commits.
-
-## Requirements
-
-- Python 3.10+
-- Linux / macOS terminal with 256-color + mouse-tracking support
-  (any modern emulator — xterm, kitty, alacritty, iTerm2, Ghostty, etc.)
-
-## Design notes
-
-See [`DECISIONS.md`](./DECISIONS.md) for why we ship a pure-Python
-engine (no SWIG binding), the difficulty conventions, and what's
-deliberately deferred.
 
 ## License
+MIT
 
-MIT (this is an original implementation; no vendored engine, see
-`DECISIONS.md`).
+## Built with
+- [Textual](https://textual.textualize.io/) — the TUI framework
+- [tui-game-build](https://github.com/akakabrian/tui-foundry) — shared build process
