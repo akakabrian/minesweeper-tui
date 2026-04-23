@@ -18,7 +18,7 @@ from typing import Awaitable, Callable
 from aiohttp import ClientSession
 
 from minesweeper_tui.agent_api import AgentAPI, start_server
-from minesweeper_tui.engine import Difficulty, MINE, new_game
+from minesweeper_tui.engine import Difficulty, new_game
 
 
 @dataclass

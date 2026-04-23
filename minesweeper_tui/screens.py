@@ -13,7 +13,7 @@ from typing import Callable
 
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, Vertical
+from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Static
 
@@ -162,7 +162,7 @@ class CustomScreen(ModalScreen):
         self._body: Static | None = None
 
     def compose(self) -> ComposeResult:
-        self._body = Static(self._render(), id="custom-body")
+        self._body = Static(self._make_body(), id="custom-body")
         yield Vertical(self._body, id="custom-container")
 
     def _clamp(self) -> None:
@@ -171,7 +171,7 @@ class CustomScreen(ModalScreen):
         cells = self.width_val * self.height_val
         self.mines_val = max(1, min(self.mines_val, cells - 9))
 
-    def _render(self) -> str:
+    def _make_body(self) -> str:
         self._clamp()
         vals = {
             "width": self.width_val,
@@ -202,12 +202,12 @@ class CustomScreen(ModalScreen):
         else:
             self.mines_val += delta
         if self._body:
-            self._body.update(self._render())
+            self._body.update(self._make_body())
 
     def action_cycle(self) -> None:
         self.field = (self.field + 1) % len(self.FIELDS)
         if self._body:
-            self._body.update(self._render())
+            self._body.update(self._make_body())
 
     def action_confirm(self) -> None:
         self._clamp()

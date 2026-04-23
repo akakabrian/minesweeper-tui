@@ -24,7 +24,6 @@ from minesweeper_tui.engine import (
     REVEALED,
     FLAGGED,
     MINE,
-    new_game,
 )
 
 OUT = Path(__file__).resolve().parent / "out"

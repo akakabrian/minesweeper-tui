@@ -34,7 +34,6 @@ from .engine import (
     new_game,
 )
 from .screens import (
-    CustomScreen,
     DifficultyScreen,
     HelpScreen,
     HighScoresScreen,
@@ -368,13 +367,18 @@ class MinesweeperApp(App):
         self._agent_api = None  # AgentAPI | None — populated on_mount if enabled
         self._agent_runner = None  # aiohttp AppRunner
 
-        # Widget refs — filled in compose().
-        self.board_view: Optional[BoardView] = None
-        self.status_panel: Optional[StatusPanel] = None
-        self.controls_panel: Optional[ControlsPanel] = None
-        self.legend_panel: Optional[LegendPanel] = None
-        self.log_view: Optional[RichLog] = None
-        self.flash_bar: Optional[Static] = None
+        # Widget refs — constructed up-front so the type system sees them
+        # as always-present. Textual's compose() yields them into the tree
+        # but the Python instances already exist here.
+        self.board_view: BoardView = BoardView(self.game)
+        self.status_panel: StatusPanel = StatusPanel()
+        self.controls_panel: ControlsPanel = ControlsPanel()
+        self.legend_panel: LegendPanel = LegendPanel()
+        self.log_view: RichLog = RichLog(id="log", markup=True, max_lines=500)
+        self.flash_bar: Static = Static(
+            "Welcome — click or press Space to reveal.  ?=help",
+            id="flash-bar",
+        )
 
     def _label_for(self, difficulty: Difficulty, g: Game) -> str:
         if difficulty is Difficulty.CUSTOM:
@@ -383,14 +387,7 @@ class MinesweeperApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
-        self.flash_bar = Static("Welcome — click or press Space to reveal.  ?=help",
-                                id="flash-bar")
         yield self.flash_bar
-        self.board_view = BoardView(self.game)
-        self.status_panel = StatusPanel()
-        self.controls_panel = ControlsPanel()
-        self.legend_panel = LegendPanel()
-        self.log_view = RichLog(id="log", markup=True, max_lines=500)
         self.log_view.border_title = "Log"
         yield Horizontal(
             Vertical(
@@ -429,10 +426,8 @@ class MinesweeperApp(App):
 
         def _on_change() -> None:
             # Agent mutated the game state; push it into our UI.
-            if self.board_view is not None:
-                self.board_view.refresh()
-            if self.status_panel is not None:
-                self.status_panel.refresh_panel(self)
+            self.board_view.refresh()
+            self.status_panel.refresh_panel(self)
 
         self._agent_api = AgentAPI(self.game, on_change=_on_change)
         try:
@@ -451,8 +446,7 @@ class MinesweeperApp(App):
         )
 
     def _tick_ui(self) -> None:
-        if self.status_panel is not None:
-            self.status_panel.refresh_panel(self)
+        self.status_panel.refresh_panel(self)
 
     def elapsed_seconds(self) -> float:
         if self.start_time is None:
@@ -461,18 +455,14 @@ class MinesweeperApp(App):
         return end - self.start_time
 
     def log_msg(self, msg: str) -> None:
-        if self.log_view is not None:
-            self.log_view.write(msg)
+        self.log_view.write(msg)
 
     def flash(self, msg: str) -> None:
-        if self.flash_bar is not None:
-            self.flash_bar.update(msg)
+        self.flash_bar.update(msg)
 
     # --- actions ---
 
     def action_move_cursor(self, dx: int, dy: int) -> None:
-        if self.board_view is None:
-            return
         g = self.game
         nx = max(0, min(self.board_view.cursor_x + dx, g.width - 1))
         ny = max(0, min(self.board_view.cursor_y + dy, g.height - 1))
@@ -480,21 +470,20 @@ class MinesweeperApp(App):
         self.board_view.cursor_y = ny
 
     def action_reveal(self) -> None:
-        if self.board_view is None or self.game.is_over:
-            if self.game.is_over:
-                self.flash("Game over. Press [bold]n[/] for a new game.")
+        if self.game.is_over:
+            self.flash("Game over. Press [bold]n[/] for a new game.")
             return
         self._apply_action(self.board_view.cursor_x, self.board_view.cursor_y,
                            "reveal")
 
     def action_flag(self) -> None:
-        if self.board_view is None or self.game.is_over:
+        if self.game.is_over:
             return
         self._apply_action(self.board_view.cursor_x, self.board_view.cursor_y,
                            "flag")
 
     def action_chord(self) -> None:
-        if self.board_view is None or self.game.is_over:
+        if self.game.is_over:
             return
         self._apply_action(self.board_view.cursor_x, self.board_view.cursor_y,
                            "chord")
@@ -550,10 +539,8 @@ class MinesweeperApp(App):
         # on a big zero-region) or when the game ended. Cursor-moves use a
         # targeted refresh; for reveals a full refresh is fine — the board is
         # at most 80×40 cells.
-        if self.board_view is not None:
-            self.board_view.refresh()
-        if self.status_panel is not None:
-            self.status_panel.refresh_panel(self)
+        self.board_view.refresh()
+        self.status_panel.refresh_panel(self)
 
     def _on_game_over(self, won: bool) -> None:
         if won:
@@ -589,8 +576,7 @@ class MinesweeperApp(App):
         )
         self.start_time = None
         self.end_time = None
-        if self.board_view is not None:
-            self.board_view.attach_game(self.game)
+        self.board_view.attach_game(self.game)
         self.status_panel.refresh_panel(self)
         if self._agent_api is not None:
             self._agent_api.set_game(self.game)
@@ -619,8 +605,7 @@ class MinesweeperApp(App):
             self.difficulty_label = self._label_for(self._initial_difficulty, self.game)
             self.start_time = None
             self.end_time = None
-            if self.board_view is not None:
-                self.board_view.attach_game(self.game)
+            self.board_view.attach_game(self.game)
             self.status_panel.refresh_panel(self)
             if self._agent_api is not None:
                 self._agent_api.set_game(self.game)

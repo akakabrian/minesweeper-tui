@@ -25,7 +25,7 @@ Design notes (from the skill's gotcha catalogue):
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Callable
+from typing import Callable
 
 try:
     from aiohttp import web
@@ -169,9 +169,10 @@ async def start_server(
     await site.start()
     # Resolve bound port (port=0 → kernel picks).
     bound_port = port
-    for sock in getattr(site, "_server", None).sockets if site._server else []:
-        bound_port = sock.getsockname()[1]
-        break
+    server = getattr(site, "_server", None)
+    sockets = getattr(server, "sockets", None) if server is not None else None
+    if sockets:
+        bound_port = sockets[0].getsockname()[1]
     return runner, bound_port
 
 
