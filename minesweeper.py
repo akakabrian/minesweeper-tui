@@ -28,6 +28,8 @@ def main() -> None:
     p.add_argument("--seed",   type=int, help="RNG seed (for reproducible boards)")
     p.add_argument("--sound", action="store_true",
                    help="enable synth SFX (default off)")
+    p.add_argument("--music", action="store_true",
+                   help="start background music on launch (toggle in-app with `m`)")
     p.add_argument("--agent", action="store_true",
                    help="expose the REST agent API alongside the TUI")
     p.add_argument("--headless", action="store_true",
@@ -57,7 +59,7 @@ def main() -> None:
         return
     run(args.difficulty, width=args.width, height=args.height,
         mines=args.mines, seed=args.seed, sound=args.sound,
-        agent=args.agent, host=args.host, port=args.port)
+        music=args.music, agent=args.agent, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

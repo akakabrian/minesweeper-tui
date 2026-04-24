@@ -86,6 +86,50 @@ class LegendScreen(ModalScreen):
         )
 
 
+class RulesScreen(ModalScreen):
+    BINDINGS = [Binding("escape,q,r", "app.pop_screen", "close")]
+
+    DEFAULT_CSS = """
+    RulesScreen {
+        align: center middle;
+        background: #07190f 70%;
+    }
+    #rules-box {
+        width: 80;
+        max-height: 90%;
+        border: round #ffd45a;
+        background: #07190f;
+        padding: 1 2;
+    }
+    #rules-title {
+        color: #ffd45a;
+        text-style: bold;
+        text-align: center;
+        margin-bottom: 1;
+    }
+    #rules-body {
+        color: #efe8d1;
+    }
+    #rules-foot {
+        color: #8faa83;
+        text-align: center;
+        margin-top: 1;
+    }
+    """
+
+    def __init__(self, text: str) -> None:
+        super().__init__()
+        self._text = text
+
+    def compose(self) -> ComposeResult:
+        from textual.containers import VerticalScroll
+        with Vertical(id="rules-box"):
+            yield Static("◆ Minesweeper — rules ◆", id="rules-title")
+            with VerticalScroll():
+                yield Static(self._text, id="rules-body")
+            yield Static("[dim]Esc / r / q — close[/dim]", id="rules-foot")
+
+
 DIFFICULTIES = [
     ("Beginner",     9,  9,  10),
     ("Intermediate", 16, 16, 40),

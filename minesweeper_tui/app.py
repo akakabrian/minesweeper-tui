@@ -33,12 +33,15 @@ from .engine import (
     MINE,
     new_game,
 )
+from .music import MusicPlayer
+from .rules import rules_text
 from .screens import (
     DifficultyScreen,
     HelpScreen,
     HighScoresScreen,
     LegendScreen,
     ResultScreen,
+    RulesScreen,
 )
 from .sounds import SoundBoard
 
@@ -338,12 +341,14 @@ class MinesweeperApp(App):
         Binding("question_mark,slash", "help",     show=False),
         Binding("l",     "legend",     show=False),
         Binding("h",     "highscores", show=False),
+        Binding("r",     "rules",      show=False),
+        Binding("m",     "toggle_music", show=False),
     ]
 
     def __init__(self, difficulty: Difficulty = Difficulty.BEGINNER,
                  *, width: int | None = None, height: int | None = None,
                  mines: int | None = None, seed: int | None = None,
-                 sound: bool = False,
+                 sound: bool = False, music: bool = False,
                  agent: bool = False, host: str = "127.0.0.1",
                  port: int = 8765) -> None:
         super().__init__()
@@ -359,6 +364,7 @@ class MinesweeperApp(App):
         self.end_time: Optional[float] = None
         self.highscores: dict[str, float] = _load_highscores()
         self.sounds = SoundBoard(enabled=sound)
+        self.music = MusicPlayer(enabled=music)
 
         # Agent API state.
         self._agent_enabled = agent
@@ -416,9 +422,14 @@ class MinesweeperApp(App):
         # Claim focus so our priority bindings dominate the ScrollView's
         # native arrow-scroll bindings.
         self.set_focus(None)
+        # Background music (subscription-free, silent on failure).
+        self.music.start()
         # Optional: bring up the agent REST API on the same asyncio loop.
         if self._agent_enabled:
             self.run_worker(self._start_agent_api(), exclusive=True)
+
+    def on_unmount(self) -> None:
+        self.music.stop()
 
     async def _start_agent_api(self) -> None:
         """Launch the aiohttp server as a background task sharing our loop."""
@@ -620,6 +631,13 @@ class MinesweeperApp(App):
     def action_legend(self) -> None:
         self.push_screen(LegendScreen())
 
+    def action_rules(self) -> None:
+        self.push_screen(RulesScreen(rules_text()))
+
+    def action_toggle_music(self) -> None:
+        playing = self.music.toggle()
+        self.flash("Music on." if playing else "Music off.")
+
     def action_highscores(self) -> None:
         # Ensure all difficulty keys exist so the screen can show a stable
         # three-row layout.
@@ -636,7 +654,7 @@ class MinesweeperApp(App):
 def run(difficulty: str = "beginner",
         *, width: int | None = None, height: int | None = None,
         mines: int | None = None, seed: int | None = None,
-        sound: bool = False,
+        sound: bool = False, music: bool = False,
         agent: bool = False, host: str = "127.0.0.1",
         port: int = 8765) -> None:
     diff = {
@@ -648,7 +666,7 @@ def run(difficulty: str = "beginner",
     if diff is None:
         raise SystemExit(f"unknown difficulty: {difficulty!r}")
     app = MinesweeperApp(diff, width=width, height=height, mines=mines,
-                          seed=seed, sound=sound, agent=agent,
+                          seed=seed, sound=sound, music=music, agent=agent,
                           host=host, port=port)
     try:
         app.run()
@@ -660,3 +678,4 @@ def run(difficulty: str = "beginner",
         )
         sys.stdout.flush()
         app.sounds.close()
+        app.music.stop()
